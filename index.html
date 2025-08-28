@@ -155,29 +155,27 @@
     </div>
 
     <script type="module">
-        // Import the official Hugging Face Inference client (browser-compatible)
         import { InferenceClient } from "https://esm.sh/@huggingface/inference";
 
-        // 1) Put your HF access token here (create one at https://huggingface.co/settings/tokens)
-        // NOTE: Exposed in browser — keep local. Use the proxy option below for anything public.
-        const HF_TOKEN = "huggingface token";
-
-        // 2) Pick a chat-capable model available via HF Inference Providers.
-        //    Good defaults: "mistralai/Mistral-7B-Instruct-v0.3", "HuggingFaceH4/zephyr-7b-beta"
         const MODEL = "mistralai/Mistral-7B-Instruct-v0.3";
+        document.getElementById("model-name").textContent = MODEL;
 
-        // Optionally you can force a provider, but "auto" works well.
-        // See provider list & usage in docs. 
-        // const PROVIDER = "hf-inference";
+        // Prompt for token if not stored
+        let HF_TOKEN = localStorage.getItem("hf_token");
+        if (!HF_TOKEN) {
+            HF_TOKEN = prompt("Enter your Hugging Face token:");
+            if (HF_TOKEN) {
+                localStorage.setItem("hf_token", HF_TOKEN);
+            } else {
+                alert("A Hugging Face token is required to use this chatbot.");
+            }
+        }
 
         const hf = new InferenceClient(HF_TOKEN);
-
         const chatEl = document.getElementById("chat");
         const inputEl = document.getElementById("input");
         const sendBtn = document.getElementById("send");
-        document.getElementById("model-name").textContent = MODEL;
-
-        const messages = []; // { role: "user" | "assistant", content: string }
+        const messages = [];
 
         function addMessage(role, content) {
             const div = document.createElement("div");
@@ -198,21 +196,17 @@
             addMessage("user", text);
 
             sendBtn.disabled = true;
-            const botBubble = addMessage("assistant", ""); // we'll stream into this
+            const botBubble = addMessage("assistant", "");
 
             try {
-                // Stream tokens as they arrive (Chat Completions)
                 let assembled = "";
                 for await (const chunk of hf.chatCompletionStream({
                     model: MODEL,
-                    // provider: PROVIDER,  // uncomment to pin a provider
                     messages,
-                    // generation params (tweak to taste)
                     max_tokens: 512,
                     temperature: 0.7,
                     top_p: 0.95,
                 })) {
-                    // The API yields OpenAI-style chunks; append deltas as they come
                     const choice = chunk?.choices?.[0];
                     const delta = choice?.delta?.content ?? "";
                     if (delta) {
@@ -221,8 +215,6 @@
                         chatEl.scrollTop = chatEl.scrollHeight;
                     }
                 }
-
-                // Persist assistant message in the transcript
                 messages.push({ role: "assistant", content: botBubble.textContent });
             } catch (err) {
                 botBubble.textContent = `⚠️ ${err?.message || err}`;
