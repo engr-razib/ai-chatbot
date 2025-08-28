@@ -126,6 +126,46 @@
         a {
             color: #99c1ff
         }
+
+        /* Modal styles */
+        #token-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 18, 32, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #token-modal .modal-content {
+            background: #111a2e;
+            padding: 24px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 300px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        #token-modal input {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #314567;
+            background: #0e172b;
+            color: #e6ecff;
+        }
+
+        #token-modal button {
+            background: #27406b;
+            border: 1px solid #3c5784;
+            color: #e6ecff;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -143,14 +183,22 @@
 
         <div class="card">
             <div class="row">
-                <input id="input" placeholder="Type your message…" />
-                <button id="send">Send</button>
+                <input id="input" placeholder="Type your message…" disabled />
+                <button id="send" disabled>Send</button>
             </div>
         </div>
 
         <div class="foot">
-            Built with <code>@huggingface/inference</code> chat completion streaming. For production, hide your token
-            behind a proxy.
+            Built with <code>@huggingface/inference</code> chat completion streaming. For production, hide your token behind a proxy.
+        </div>
+    </div>
+
+    <!-- Token Modal -->
+    <div id="token-modal" style="display:none;">
+        <div class="modal-content">
+            <div>Enter your Hugging Face token:</div>
+            <input type="text" id="token-input" placeholder="hf_xxxxx..." />
+            <button id="token-submit">Start Chat</button>
         </div>
     </div>
 
@@ -160,18 +208,6 @@
         const MODEL = "mistralai/Mistral-7B-Instruct-v0.3";
         document.getElementById("model-name").textContent = MODEL;
 
-        // Prompt for token if not stored
-        let HF_TOKEN = localStorage.getItem("hf_token");
-        if (!HF_TOKEN) {
-            HF_TOKEN = prompt("Enter your Hugging Face token:");
-            if (HF_TOKEN) {
-                localStorage.setItem("hf_token", HF_TOKEN);
-            } else {
-                alert("A Hugging Face token is required to use this chatbot.");
-            }
-        }
-
-        const hf = new InferenceClient(HF_TOKEN);
         const chatEl = document.getElementById("chat");
         const inputEl = document.getElementById("input");
         const sendBtn = document.getElementById("send");
@@ -184,6 +220,14 @@
             chatEl.appendChild(div);
             chatEl.scrollTop = chatEl.scrollHeight;
             return div;
+        }
+
+        let hf;
+
+        function initClient(token) {
+            hf = new InferenceClient(token);
+            inputEl.disabled = false;
+            sendBtn.disabled = false;
         }
 
         async function sendMessage() {
@@ -229,6 +273,30 @@
                 e.preventDefault();
                 sendMessage();
             }
+        });
+
+        // TOKEN MODAL LOGIC
+        const tokenModal = document.getElementById("token-modal");
+        const tokenInput = document.getElementById("token-input");
+        const tokenSubmit = document.getElementById("token-submit");
+
+        let token = localStorage.getItem("hf_token");
+        if (!token) {
+            tokenModal.style.display = "flex";
+        } else {
+            initClient(token);
+        }
+
+        tokenSubmit.addEventListener("click", () => {
+            const val = tokenInput.value.trim();
+            if (!val) return alert("Token cannot be empty");
+            localStorage.setItem("hf_token", val);
+            tokenModal.style.display = "none";
+            initClient(val);
+        });
+
+        tokenInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") tokenSubmit.click();
         });
     </script>
 </body>
