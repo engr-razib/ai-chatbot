@@ -1,6 +1,4 @@
-Got it ✅ — here’s the **full markdown code** for your `README.md` file (you can copy-paste directly):
 
-````markdown
 # 🤖 HuggingFace.js Chatbot (Option 1 – Pure HTML)
 
 This is a simple **browser-only chatbot** built with `huggingface.js` and the Hugging Face Inference API.  
